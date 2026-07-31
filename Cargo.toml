@@ -1,0 +1,26 @@
+[package]
+name = "c2pa-html"
+version = "0.1.0"
+edition = "2021"
+# `usize::is_multiple_of`, used by the Base64 decoder.
+rust-version = "1.87"
+description = "C2PA manifest embedding, referencing, and hard binding for HTML documents"
+license = "MIT OR Apache-2.0"
+repository = "https://github.com/writerslogic/c2pa-html"
+keywords = ["c2pa", "provenance", "html", "manifest", "content-credentials"]
+categories = ["encoding", "parser-implementations", "web-programming"]
+readme = "README.md"
+
+[features]
+# Python bindings, built with maturin/PyO3 for the PyPI distribution. This is
+# the only feature and the only dependency in the crate: the default build has
+# neither. SHA-2 is implemented in-crate (see `src/sha2.rs`), so the hard
+# binding needs nothing external, and a caller wanting an accelerated or
+# hardware-backed digest implements `hardbinding::Hasher` rather than enabling
+# anything here.
+python = ["dep:pyo3"]
+
+[dependencies]
+
+[target.'cfg(not(target_arch = "wasm32"))'.dependencies]
+pyo3 = { version = "0.25", optional = true, features = ["extension-module", "abi3-py39"] }
