@@ -1,17 +1,39 @@
-# c2pa-html
+<p align="center">
+  <a href="https://crates.io/crates/c2pa-html"><img src="https://img.shields.io/crates/v/c2pa-html.svg" alt="crates.io"></a>
+  <a href="https://docs.rs/c2pa-html"><img src="https://docs.rs/c2pa-html/badge.svg" alt="docs.rs"></a>
+  <a href="https://github.com/writerslogic/c2pa-html/actions/workflows/ci.yml"><img src="https://github.com/writerslogic/c2pa-html/actions/workflows/ci.yml/badge.svg" alt="CI"></a>
+  <a href="https://scorecard.dev/viewer/?uri=github.com/writerslogic/c2pa-html"><img src="https://api.securityscorecards.dev/projects/github.com/writerslogic/c2pa-html/badge" alt="OpenSSF Scorecard"></a>
+  <a href="#license"><img src="https://img.shields.io/crates/l/c2pa-html.svg" alt="License"></a>
+</p>
 
-C2PA manifest embedding, referencing, and hard binding for HTML documents.
+## Overview
 
-Implements the *Embedding Manifests into HTML* section of the [C2PA Technical
-Specification](https://spec.c2pa.org/): a C2PA Manifest Store carried inline as
-the Base64 content of a `<script type="application/c2pa">` element, or
-referenced externally by a `<link rel="c2pa-manifest">` element, both in the
-document `head`.
+Implements the **Embedding Manifests into HTML** section of the [C2PA Technical Specification](https://spec.c2pa.org/specifications/specifications/2.4/specs/C2PA_Specification.html#_embedding_manifests_into_html): a C2PA Manifest Store carried inline as the Base64 content of a `<script type="application/c2pa">` element, or referenced externally by a `<link rel="c2pa-manifest">` element, both in the document `head`.
+
+```html
+<head>
+    <script type="application/c2pa">...Base64 Manifest Store...</script>
+</head>
+```
 
 ```toml
 [dependencies]
 c2pa-html = "0.1"
 ```
+
+HTML has its own embedding clause, so the structured-text method explicitly does
+not apply to it — that method covers `text/*` formats *"not already covered by a
+format-specific embedding section"*.
+
+This crate owns two things:
+
+1. **The association** — discover, embed, reference, and remove the `script` or `link` element.
+2. **The hard binding** — the exact `c2pa.hash.data` coverage for HTML, with compute and verify.
+
+Signature verification, certificate trust, assertion validation, and resolution
+of an external manifest URI are not reimplemented here.
+
+> Not certified or conformance-tested by the C2PA. It implements the embedding and hard binding as specified.
 
 ## What it does
 
@@ -145,18 +167,30 @@ document; it would not be for a multi-gigabyte asset, which is why hashing goes
 through the `Hasher` trait. A caller with that problem injects an accelerated
 implementation and never touches the built-in one.
 
-## Related
+## Related Crates
 
-| crate | method |
+Part of a family of single-purpose crates, one per C2PA embedding method. Each
+is standalone and independently versioned.
+
+| Crate | Description |
 |---|---|
-| [`c2pa-structured-text`](https://crates.io/crates/c2pa-structured-text) | structured text: ASCII-armoured manifest in a comment |
-| [`c2pa-unstructured-text`](https://crates.io/crates/c2pa-unstructured-text) | unstructured text: Unicode variation selectors |
+| [c2pa-structured-text](https://crates.io/crates/c2pa-structured-text) | Structured text: ASCII-armoured manifest in a comment or front matter |
+| [c2pa-unstructured-text](https://crates.io/crates/c2pa-unstructured-text) | Unstructured text: invisible Unicode variation-selector run |
+| [c2pa-http](https://crates.io/crates/c2pa-http) | HTTP: the `c2pa-manifest` `Link` header, with a Tower middleware |
+| [c2pa-text-binding](https://crates.io/crates/c2pa-text-binding) | Soft binding and content fingerprinting for text assets |
+| [c2pa-vtt](https://crates.io/crates/c2pa-vtt) | WebVTT caption and subtitle embedding |
+| [c2pa-zip](https://crates.io/crates/c2pa-zip) | ZIP-based documents: EPUB, DOCX, ODT, OXPS |
+| [c2pa-warc](https://crates.io/crates/c2pa-warc) | WARC web archive embedding (ISO 28500) |
+| [c2pa-fonts](https://crates.io/crates/c2pa-fonts) | OpenType/TrueType (SFNT) font embedding |
+| [c2pa-ml](https://crates.io/crates/c2pa-ml) | ML model containers: GGUF, SafeTensors, ONNX |
+| [c2pa](https://crates.io/crates/c2pa) | Official C2PA SDK |
 
-HTML is a file format, so its binding hashes stored bytes with no normalization.
-The text methods differ deliberately: structured text also hashes raw bytes but
-has no element to exclude, and unstructured text normalizes to NFC because
-clipboard-portable text may arrive in any normalization form.
+## Security
+
+Found a vulnerability? Please report it privately — see [SECURITY.md](./SECURITY.md).
 
 ## License
 
-MIT OR Apache-2.0.
+Licensed under either of [Apache License, Version 2.0](LICENSE-APACHE) or [MIT License](LICENSE-MIT) at your option.
+
+Built by [WritersLogic](https://writerslogic.com)
