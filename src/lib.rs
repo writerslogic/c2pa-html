@@ -98,7 +98,10 @@ mod base64;
 mod scan;
 mod sha2;
 
-#[cfg(feature = "python")]
+#[cfg(target_arch = "wasm32")]
+mod wasm;
+
+#[cfg(all(feature = "python", not(target_arch = "wasm32")))]
 mod python;
 
 pub mod document;
