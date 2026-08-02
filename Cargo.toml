@@ -2,7 +2,7 @@
 name = "c2pa-html"
 version = "0.1.0"
 edition = "2021"
-# `usize::is_multiple_of`, used by the Base64 decoder.
+# One MSRV across the crate family; verified with `cargo +1.87 check`.
 rust-version = "1.87"
 description = "C2PA manifest embedding, referencing, and hard binding for HTML documents"
 license = "MIT OR Apache-2.0"
