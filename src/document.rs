@@ -34,16 +34,22 @@ pub enum Manifest {
     /// `length` cover the whole element, `<script` through `</script>`
     /// inclusive — the exact span the hard binding excludes.
     Embedded {
+        /// Byte offset of the element's opening `<`.
         start: usize,
+        /// Byte length of the whole element.
         length: usize,
+        /// The decoded Manifest Store.
         store: Vec<u8>,
     },
     /// A reference to an external Manifest Store carried by a `link` element.
     /// `start` and `length` cover the whole element, which the hard binding
     /// does *not* exclude.
     Referenced {
+        /// Byte offset of the element's opening `<`.
         start: usize,
+        /// Byte length of the whole element.
         length: usize,
+        /// The URI of the external Manifest Store.
         href: String,
     },
 }

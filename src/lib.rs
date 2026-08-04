@@ -92,6 +92,7 @@
 //! [`c2pa-unstructured-text`]: https://crates.io/crates/c2pa-unstructured-text
 
 #![forbid(unsafe_code)]
+#![warn(missing_docs)]
 #![warn(missing_debug_implementations)]
 
 mod base64;
@@ -105,6 +106,8 @@ mod wasm;
 mod python;
 
 pub mod document;
+/// Errors from locating a manifest element or validating the hard binding, and
+/// the C2PA status codes they map to.
 pub mod error;
 pub mod hardbinding;
 
