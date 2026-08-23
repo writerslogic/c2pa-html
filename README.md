@@ -1,3 +1,7 @@
+# c2pa-html
+
+_C2PA manifest embedding, referencing, and hard binding for HTML documents._
+
 <p align="center">
   <a href="https://crates.io/crates/c2pa-html"><img src="https://img.shields.io/crates/v/c2pa-html.svg" alt="crates.io"></a>
   <a href="https://docs.rs/c2pa-html"><img src="https://docs.rs/c2pa-html/badge.svg" alt="docs.rs"></a>
@@ -18,7 +22,14 @@ Implements the **Embedding Manifests into HTML** section of the [C2PA Technical 
 
 ```toml
 [dependencies]
-c2pa-html = "0.1"
+c2pa-html = "0.2"
+```
+
+The same crate is published for JavaScript/WebAssembly and Python, built from this source:
+
+```bash
+npm install c2pa-html   # wasm-bindgen build
+pip install c2pa-html   # PyO3 abi3 wheel, CPython 3.9+
 ```
 
 HTML has its own embedding clause, so the structured-text method explicitly does
@@ -33,6 +44,7 @@ This crate owns two things:
 Signature verification, certificate trust, assertion validation, and resolution
 of an external manifest URI are not reimplemented here.
 
+> [!NOTE]
 > Not certified or conformance-tested by the C2PA. It implements the embedding and hard binding as specified.
 
 ## What it does
