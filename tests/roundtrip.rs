@@ -41,7 +41,7 @@ fn external_reference_round_trips_and_binds_without_exclusions() {
 #[test]
 fn the_hash_can_be_computed_before_the_manifest_exists() {
     // The generator flow: hash, sign, embed — no reserve-then-fill needed.
-    let before = inline_hash_before_embed(PAGE, Algorithm::Sha256, &Sha2);
+    let before = inline_hash_before_embed(PAGE, Algorithm::Sha256, &Sha2).unwrap();
     let embedded = document::embed(PAGE, STORE).unwrap();
     let after = compute_data_hash(&embedded, Algorithm::Sha256, &Sha2).unwrap();
     assert_eq!(before, after.hash);
@@ -50,6 +50,7 @@ fn the_hash_can_be_computed_before_the_manifest_exists() {
         exclusions: after.exclusions.clone(),
         alg: Algorithm::Sha256.id().to_string(),
         hash: before,
+        pad: Vec::new(),
         name: None,
     };
     assert!(verify_data_hash(&embedded, &assertion, &Sha2).is_ok());
@@ -103,6 +104,7 @@ fn an_assertion_naming_the_wrong_span_is_rejected() {
         }],
         alg: "sha256".into(),
         hash: vec![0; 32],
+        pad: Vec::new(),
         name: None,
     };
     assert_eq!(

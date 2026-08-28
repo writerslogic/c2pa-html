@@ -122,6 +122,7 @@ pub fn verify_data_hash(
             .collect(),
         alg: algorithm(alg)?.id().to_string(),
         hash: hash.to_vec(),
+        pad: Vec::new(),
         name: None,
     };
     hardbinding::verify_data_hash(html, &dh, &Sha2).map_err(js_err)
@@ -132,9 +133,5 @@ pub fn verify_data_hash(
 /// possible.
 #[wasm_bindgen(js_name = inlineHashBeforeEmbed)]
 pub fn inline_hash_before_embed(html: &[u8], alg: &str) -> Result<Vec<u8>, JsError> {
-    Ok(hardbinding::inline_hash_before_embed(
-        html,
-        algorithm(alg)?,
-        &Sha2,
-    ))
+    hardbinding::inline_hash_before_embed(html, algorithm(alg)?, &Sha2).map_err(js_err)
 }

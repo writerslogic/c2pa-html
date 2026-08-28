@@ -139,6 +139,7 @@ fn verify_data_hash(
             .collect(),
         alg: algorithm(alg)?.id().to_string(),
         hash: hash.to_vec(),
+        pad: Vec::new(),
         name: None,
     };
     hardbinding::verify_data_hash(html, &dh, &Sha2).map_err(map_err)
@@ -157,7 +158,8 @@ fn inline_hash_before_embed<'py>(
     html: &[u8],
     alg: &str,
 ) -> PyResult<Bound<'py, PyBytes>> {
-    let digest = hardbinding::inline_hash_before_embed(html, algorithm(alg)?, &Sha2);
+    let digest =
+        hardbinding::inline_hash_before_embed(html, algorithm(alg)?, &Sha2).map_err(map_err)?;
     Ok(PyBytes::new(py, &digest))
 }
 
