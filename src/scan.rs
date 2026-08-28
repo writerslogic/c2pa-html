@@ -294,13 +294,12 @@ pub(crate) struct Head {
 /// HTML permits both `<head>` and `</head>` to be omitted, in which case the
 /// element is implied. Rather than implement the full insertion-mode machinery,
 /// the head is taken to start after `<head>` (or after `<html>`, or at the
-/// start of the document) and to end at the first `</head>`, `<body>`, or
-/// `</html>`, or at the end of the document.
+/// start of the document) and to end at the first `</head>`, `<body>`,
+/// `</html>`, or start tag that HTML's "in head" insertion mode reprocesses in
+/// the body.
 ///
-/// For a document with an explicit `head` — which is what a claim generator
-/// produces — this is exact. For one relying on implied tags it is a superset
-/// bounded by the first body content, which is the safe direction: discovery
-/// never misses an element a browser would place in the head.
+/// This keeps discovery aligned with a conforming HTML parser even when the
+/// author omitted both `</head>` and `<body>`.
 pub(crate) fn head(html: &[u8], tags: &[Tag]) -> Head {
     let start = tags
         .iter()
@@ -311,7 +310,22 @@ pub(crate) fn head(html: &[u8], tags: &[Tag]) -> Head {
     let terminator = tags.iter().find(|t| {
         t.start >= start
             && ((t.is_end && (t.name == "head" || t.name == "html"))
-                || (!t.is_end && t.name == "body"))
+                || (!t.is_end
+                    && (t.name == "body"
+                        || !matches!(
+                            t.name.as_str(),
+                            "base"
+                                | "basefont"
+                                | "bgsound"
+                                | "link"
+                                | "meta"
+                                | "noframes"
+                                | "noscript"
+                                | "script"
+                                | "style"
+                                | "template"
+                                | "title"
+                        ))))
     });
 
     Head {
@@ -452,6 +466,13 @@ mod tests {
         let h = head(html, &tags(html));
         assert_eq!(&html[h.content.clone()], b"<meta>");
         assert_eq!(h.end_tag, None);
+    }
+
+    #[test]
+    fn flow_content_implicitly_closes_the_head() {
+        let html = b"<html><meta><p>x<link rel=c2pa-manifest href=m.c2pa>";
+        let h = head(html, &tags(html));
+        assert_eq!(&html[h.content], b"<meta>");
     }
 
     #[test]

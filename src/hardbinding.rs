@@ -135,6 +135,8 @@ pub struct DataHash {
     pub alg: String,
     /// The computed digest.
     pub hash: Vec<u8>,
+    /// Zero-filled padding required by the `data-hash-map` schema.
+    pub pad: Vec<u8>,
     /// Optional human-readable name for the assertion.
     pub name: Option<String>,
 }
@@ -155,10 +157,11 @@ impl DataHash {
             .map(|e| format!("{{\"start\":{},\"length\":{}}}", e.start, e.length))
             .collect();
         let mut json = format!(
-            "{{\"exclusions\":[{}],\"alg\":\"{}\",\"hash\":\"{}\"",
+            "{{\"exclusions\":[{}],\"alg\":\"{}\",\"hash\":\"{}\",\"pad\":\"{}\"",
             ranges.join(","),
             self.alg,
-            base64::encode(&self.hash)
+            base64::encode(&self.hash),
+            base64::encode(&self.pad)
         );
         if let Some(name) = &self.name {
             json.push_str(&format!(",\"name\":\"{name}\""));
@@ -209,6 +212,7 @@ pub fn compute_data_hash(
         exclusions,
         alg: alg.id().to_string(),
         hash: hasher.digest(alg, &covered),
+        pad: Vec::new(),
         name: None,
     })
 }
@@ -223,8 +227,13 @@ pub fn compute_data_hash(
 /// This is the ordering that makes an inline HTML manifest signable: hash,
 /// sign, embed. There is no equivalent for an external manifest, whose `link`
 /// element is inside the hash.
-pub fn inline_hash_before_embed(html: &[u8], alg: Algorithm, hasher: &impl Hasher) -> Vec<u8> {
-    hasher.digest(alg, html)
+pub fn inline_hash_before_embed(
+    html: &[u8],
+    alg: Algorithm,
+    hasher: &impl Hasher,
+) -> Result<Vec<u8>, Error> {
+    let cleaned = document::remove(html)?;
+    Ok(hasher.digest(alg, &cleaned))
 }
 
 /// Verify a `c2pa.hash.data` binding against `html`, following the validator
@@ -242,11 +251,7 @@ pub fn verify_data_hash(
     let located = manifest_exclusions(html)?;
     // An inline manifest must be excluded; an external one must not be, since
     // the `link` element is part of what the hash covers.
-    let ranges_agree = match located.first() {
-        Some(l) => data_hash.exclusions.contains(l),
-        None => data_hash.exclusions.is_empty(),
-    };
-    if !ranges_agree {
+    if data_hash.exclusions != located {
         return Err(Error::MalformedExclusion);
     }
     let covered = apply_exclusions(html, &data_hash.exclusions)?;
@@ -342,7 +347,7 @@ mod tests {
 
     #[test]
     fn the_hash_can_be_computed_before_the_manifest_exists() {
-        let before = inline_hash_before_embed(DOC, Algorithm::Sha256, &SumHasher);
+        let before = inline_hash_before_embed(DOC, Algorithm::Sha256, &SumHasher).unwrap();
         let html = document::embed(DOC, STORE).unwrap();
         let after = compute_data_hash(&html, Algorithm::Sha256, &SumHasher).unwrap();
         assert_eq!(
@@ -354,6 +359,7 @@ mod tests {
             exclusions: after.exclusions.clone(),
             alg: Algorithm::Sha256.id().to_string(),
             hash: before,
+            pad: Vec::new(),
             name: None,
         };
         assert!(verify_data_hash(&html, &dh, &SumHasher).is_ok());
@@ -431,6 +437,29 @@ mod tests {
             verify_data_hash(&html, &dh, &SumHasher),
             Err(Error::MalformedExclusion)
         );
+    }
+
+    #[test]
+    fn an_inline_binding_with_an_additional_exclusion_is_rejected() {
+        let html = document::embed(DOC, STORE).unwrap();
+        let mut dh = compute_data_hash(&html, Algorithm::Sha256, &SumHasher).unwrap();
+        dh.exclusions.push(Exclusion {
+            start: html.len() - 4,
+            length: 4,
+        });
+        assert_eq!(
+            verify_data_hash(&html, &dh, &SumHasher),
+            Err(Error::MalformedExclusion)
+        );
+    }
+
+    #[test]
+    fn pre_embed_hash_replaces_an_existing_manifest_first() {
+        let old = document::embed(DOC, b"old-store").unwrap();
+        let before = inline_hash_before_embed(&old, Algorithm::Sha256, &SumHasher).unwrap();
+        let replaced = document::embed(&old, STORE).unwrap();
+        let after = compute_data_hash(&replaced, Algorithm::Sha256, &SumHasher).unwrap();
+        assert_eq!(before, after.hash);
     }
 
     #[test]
@@ -530,11 +559,12 @@ mod tests {
             }],
             alg: "sha256".into(),
             hash: vec![0xDE, 0xAD, 0xBE, 0xEF],
+            pad: Vec::new(),
             name: None,
         };
         assert_eq!(
             dh.to_json(),
-            r#"{"exclusions":[{"start":73,"length":114}],"alg":"sha256","hash":"3q2+7w=="}"#
+            r#"{"exclusions":[{"start":73,"length":114}],"alg":"sha256","hash":"3q2+7w==","pad":""}"#
         );
     }
 
@@ -544,11 +574,12 @@ mod tests {
             exclusions: Vec::new(),
             alg: "sha512".into(),
             hash: vec![0x01],
+            pad: Vec::new(),
             name: Some("html".into()),
         };
         assert_eq!(
             dh.to_json(),
-            r#"{"exclusions":[],"alg":"sha512","hash":"AQ==","name":"html"}"#
+            r#"{"exclusions":[],"alg":"sha512","hash":"AQ==","pad":"","name":"html"}"#
         );
     }
 
