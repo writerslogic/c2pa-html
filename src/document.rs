@@ -413,7 +413,7 @@ pub(crate) mod tests {
     }
 
     #[test]
-    fn two_links_are_treated_as_no_manifest_located() {
+    fn two_links_are_rejected_as_multiple_manifests() {
         let html = b"<head><link rel=c2pa-manifest href=a><link rel=c2pa-manifest href=b></head>";
         assert_eq!(extract(html), Err(Error::MultipleManifests));
     }
