@@ -125,12 +125,12 @@
   "static_analysis_fixed_justification": "CI enforces `-D warnings` on clippy (ci.yml lines 39-40), so any clippy finding fails the build and must be fixed before merge; commit 4b85f74 'chore: harden lints, docs, and CI' shows active lint remediation.",
   "static_analysis_often_status": "Met",
   "static_analysis_often_justification": "clippy runs in CI on every push to main and every pull request (.github/workflows/ci.yml triggers, lines 6-12), i.e. on every commit, not just before releases.",
-  "dynamic_analysis_status": "Unmet",
-  "dynamic_analysis_justification": "No dynamic analysis tool (e.g. sanitizers, fuzzing) is configured anywhere in .github/workflows/ or the repo; only static analysis (clippy) and unit/integration tests are run.",
+  "dynamic_analysis_status": "Met",
+  "dynamic_analysis_justification": "A cargo-fuzz target (fuzz/fuzz_targets/parse_untrusted.rs) drives the crate's untrusted-input parsers with libFuzzer; fuzz/README.md documents how to run it.",
   "dynamic_analysis_unsafe_status": "N/A",
   "dynamic_analysis_unsafe_justification": "N/A: src/lib.rs line 94 `#![forbid(unsafe_code)]` makes any `unsafe` block a hard compile error; grep -rn 'unsafe' src/ confirms the only occurrence is that forbid attribute itself -- there is no memory-unsafe code to analyze.",
-  "dynamic_analysis_enable_assertions_status": "Unmet",
-  "dynamic_analysis_enable_assertions_justification": "No dynamic-analysis configuration exists (see dynamic_analysis, Unmet), so no assertion-enabling config for such a tool exists either.",
+  "dynamic_analysis_enable_assertions_status": "Met",
+  "dynamic_analysis_enable_assertions_justification": "The fuzz target builds with cargo-fuzz's default dev profile, which enables debug assertions and overflow checks, so Rust's integer-overflow and bounds checks act as assertions during fuzzing.",
   "dynamic_analysis_fixed_status": "N/A",
   "dynamic_analysis_fixed_justification": "N/A: no dynamic analysis tool is run (see dynamic_analysis, Unmet), so no medium+ dynamic-analysis findings exist to have been fixed."
 }
