@@ -189,8 +189,16 @@ pub fn apply_exclusions(html: &[u8], exclusions: &[Exclusion]) -> Result<Vec<u8>
     let mut out = Vec::with_capacity(html.len());
     for ex in exclusions {
         let end = ex.end().ok_or(Error::MalformedExclusion)?;
-        if ex.start < cursor || end > html.len() {
+        if ex.start < cursor {
             return Err(Error::MalformedExclusion);
+        }
+        if end > html.len() {
+            // Out-of-order/overlapping ranges and a range that runs past the end of
+            // the document are two different conditions with two different status
+            // codes in the general data-hash validation procedure: the former is
+            // `assertion.dataHash.malformed`, the latter is
+            // `assertion.dataHash.mismatch`.
+            return Err(Error::HashMismatch);
         }
         out.extend_from_slice(&html[cursor..ex.start]);
         cursor = end;
@@ -429,6 +437,38 @@ mod tests {
     }
 
     #[test]
+    fn an_exclusion_running_past_the_end_of_the_document_is_a_hash_mismatch_not_malformed() {
+        // Beyond-end-of-document and out-of-order/overlapping are two different
+        // conditions with two different registered status codes in the general
+        // data-hash validation procedure: `assertion.dataHash.mismatch` for the
+        // former, `assertion.dataHash.malformed` for the latter.
+        let html = b"short";
+        let beyond_end = [Exclusion {
+            start: 0,
+            length: 100,
+        }];
+        assert_eq!(
+            apply_exclusions(html, &beyond_end),
+            Err(Error::HashMismatch)
+        );
+
+        let out_of_order = [
+            Exclusion {
+                start: 2,
+                length: 1,
+            },
+            Exclusion {
+                start: 0,
+                length: 1,
+            },
+        ];
+        assert_eq!(
+            apply_exclusions(html, &out_of_order),
+            Err(Error::MalformedExclusion)
+        );
+    }
+
+    #[test]
     fn an_inline_binding_with_no_exclusion_is_rejected() {
         let html = document::embed(DOC, STORE).unwrap();
         let mut dh = compute_data_hash(&html, Algorithm::Sha256, &SumHasher).unwrap();
@@ -496,7 +536,8 @@ mod tests {
             apply_exclusions(&html, &bad),
             Err(Error::MalformedExclusion)
         );
-        // Past the end.
+        // Past the end: a hash-mismatch condition, not malformed shape -- see
+        // an_exclusion_running_past_the_end_of_the_document_is_a_hash_mismatch_not_malformed.
         assert_eq!(
             apply_exclusions(
                 &html,
@@ -505,7 +546,7 @@ mod tests {
                     length: html.len() + 1
                 }]
             ),
-            Err(Error::MalformedExclusion)
+            Err(Error::HashMismatch)
         );
         // Overflowing.
         assert_eq!(

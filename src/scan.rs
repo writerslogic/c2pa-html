@@ -23,7 +23,21 @@ use std::ops::Range;
 /// Elements whose content is raw text, not markup. A `<link rel="c2pa-manifest">`
 /// written inside a JavaScript string is text, not an element, and must not be
 /// discovered as one.
-const RAW_TEXT: [&str; 4] = ["script", "style", "textarea", "title"];
+///
+/// `noscript` is included because, per the HTML parsing algorithm, when
+/// scripting is enabled (the normal case for essentially every deployed
+/// browser) its content is tokenized as raw text and never becomes part of
+/// the DOM — a manifest-shaped element inside it is not a live association.
+///
+/// `template` content is *not* included here even though it has the same
+/// "not live in the main document" property: unlike the other raw-text
+/// elements, a `template`'s content is parsed as real markup (into a
+/// detached template-contents fragment), not skipped as text, so folding it
+/// into this list would be wrong — it needs its own fragment-fencing, which
+/// this scanner does not yet implement. A manifest-shaped element inside
+/// `<head><template>...</template></head>` is therefore still (incorrectly)
+/// discovered as a live candidate; this is a known, documented gap.
+const RAW_TEXT: [&str; 5] = ["script", "style", "textarea", "title", "noscript"];
 
 /// A start or end tag located in the document.
 #[derive(Debug, Clone, PartialEq, Eq)]
